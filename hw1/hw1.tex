@@ -3,5 +3,72 @@
     \title{第一次作业}
     \maketitle
     
-    
+    \section{k-mean 算法}
+
+    \begin{proof}
+        对两步分别证明。
+
+        \begin{enumerate}[(a)]
+            \item \textbf{E 步} 如果将每一个点 $x_n$ 赋予类 $k_n^\prime$ 使得其相对于其他所有的类最近，即
+            \begin{equation*}
+                \| x_n-\mu_{k_n^\prime} \| = \min_k{\| x_n - \mu_k\|}
+            \end{equation*}
+            就意味着它将比上一次赋予的类 $k_n$ 在现在的这种聚类分布下距离不会增加：
+            \begin{equation*}
+                \| x_n-\mu_{k_n^\prime} \| \leq \| x_n-\mu_{k_n} \|
+            \end{equation*}
+            那么在对这个点求和的时候，根据指示函数 $r_{nk}$ 的定义，该项也不会增加：
+            \begin{equation*}
+                j_n = \sum_{k=1}^K r_{nk}^{\prime}\| x_n - \mu_k \|^2 \leq \sum_{k=1}^K r_{nk}\| x_n - \mu_k \|^2
+            \end{equation*}
+            这里
+            \begin{equation*}
+                r_{nk} = \begin{cases}
+                    1, & \text{$x_n$ 属于类 $k$;}\\
+                    0, & \text{其他情况.}
+                \end{cases}
+            \end{equation*}
+            那么损失函数也不会增加：
+            \begin{equation}
+                J(\mu_1,\cdots,\mu_K) = \sum_{n=1}^N j_n
+            \end{equation}
+            \item \textbf{M 步} 
+            记每个聚类 $k$ 内的点损失函数贡献值为
+            \begin{equation}\label{eq:cluster}
+                j_k = \sum_{n=1}^N r_{nk}\|x_n-\mu_k\|^2
+            \end{equation}
+            求和可以交换，损失函数改写为
+            \begin{equation}\label{eq:loss}
+                J(\mu_1,\cdots,\mu_K)=\sum_{k=1}^K j_k
+            \end{equation}
+            将用引理 \ref{lem:sqr} 证明，使用聚类内点的平均点作为新的聚类点将不会增加该项。
+            \begin{lemma}[距离平方和最小]\label{lem:sqr}
+                当 $\mu$ 是所有数据点的均值时，距离平方和
+                \begin{equation}\label{eq:dist}
+                    f = \sum_{t=1}^N \| \mu-x_t \|^2
+                \end{equation}
+                最小。
+                \begin{proof}
+                    将公式 \eqref{eq:dist} 改写
+                    \begin{align*}
+                        f &= \sum_{t=1}^N \| \mu-x_t \|^2 \\
+                          &= \sum_{t=1}^N (\mu-x_t)^T(\mu-x_t) \\
+                          &= \sum_{t=1}^N \left(\mu^T\mu - 2x_t^T\mu+x_t^Tx_t\right)
+                    \end{align*}
+                    对其求导，
+                    \begin{align}
+                        \frac{\partial f}{\partial \mu} = \sum_{t=1}^N(2\mu^T-2x_t^T)&=0\nonumber\\
+                        \mu=\frac{1}{N}\sum_{t=1}^N x_t\label{eq:mean}
+                    \end{align}
+                    公式 \eqref{eq:mean} 表明当 $\mu$ 是所有数据点的均值时，导数为 0，距离平方和最小。
+                \end{proof}
+            \end{lemma}
+            由于对于每一类而言，公式 \eqref{eq:cluster} 都不会增加，而类别指示函数 $r_{nk}$ 不会改变，所以损失函数 \eqref{eq:loss} 不会增加。
+        \end{enumerate}
+    \end{proof}
+
+    \section{k-mean 与 GMM 之间}
+
+
+
 \end{document}

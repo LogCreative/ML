@@ -6,6 +6,8 @@
 \usepackage[shortlabels]{enumitem}
 \usepackage{array,float,booktabs}
 \usepackage{xcolor}
+\usepackage[vlined,ruled,linesnumbered]{algorithm2e}
+
 \usepackage{listings}
 \definecolor{grey}{rgb}{0.8,0.8,0.8}
 \definecolor{darkgreen}{rgb}{0,0.3,0}
@@ -44,9 +46,9 @@
 \newtheorem{proposition}[theorem]{命题}
 \newtheorem{corollary}[theorem]{推论}
 \newtheorem{exercise}{练习}
-\newtheorem*{solution}{解}
 \newtheorem{definition}{定义}
 \theoremstyle{definition}
+\newcommand{\solution}{\textbf{解.}~}
 
 \usepackage[colorlinks]{hyperref}
 \usepackage{zhlipsum}

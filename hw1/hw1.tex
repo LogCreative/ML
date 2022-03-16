@@ -69,6 +69,46 @@
 
     \section{k-mean 与 GMM 之间}
 
+    \begin{solution}
+        为了将 GMM 退化为 k-mean，需要对 GMM 有三个方面的特殊化处理：
+        \begin{align}
+            \pi_k &= \frac{1}{K} \label{eq:mixing}\\
+            \bm{\Sigma} &= \bm{I} \label{eq:conv} \\
+            p(k|x_n) &= \begin{cases}
+                1, & \text{如果 }k=\arg\max_k\mathcal{N}(x_n|\mu_k,\Sigma_k) \\
+                0, & \text{其他情况.}
+            \end{cases} \label{eq:oneink}
+        \end{align}
+        公式 \eqref{eq:mixing} 是混合权重的归一，公式 \eqref{eq:conv} 是协方差一致使得其只计算欧氏距离，公式 \eqref{eq:oneink} 是硬赋值只取可能性最大的那个聚类 $k$。
 
+        为了得到其中一个中间变种，这里我们只退化 \eqref{eq:mixing}，使 GMM 中的 $\pi_k=\frac{1}{K}$，就可以得到一个更加一般的带方差项软赋值的 k-mean 算法 \ref{alg:vark}。此时的对数似然值定义为
+        \begin{equation}\label{eq:loglike}
+            \ln p(\bm{X}|\bm{\mu},\bm{\Sigma})=\sum_{n=1}^N\left[-\ln K + \ln\sum_{k=1}^K\mathcal{N}(\bm{x}_n|\bm{\mu}_k,\bm{\Sigma}_k)\right]
+        \end{equation}
 
+        \textbf{优点} 这种算法可以很好地拓展 k-mean 算法，使其能够具有方差项（引入高斯分布），并且软赋值可以更好地考虑多个聚类。
+        
+        \textbf{缺点} 这种算法无疑增加了一定的计算量。
+    \end{solution}
+
+    \begin{algorithm}
+        \caption{含方差软赋值的 k-mean 算法}\label{alg:vark}
+        \KwIn{数据点 $\bm{X}={\bm{x}_n}_{n=1}^N$, 聚类数目 $K$}
+        \KwOut{聚类的分类结果 $\bm{\mu}_j,\bm{\Sigma}_j,\quad\forall j\in \mathbb{N}\cap[1,K]$}
+        \BlankLine
+        初始化均值矩阵 $\bm{\mu}_k$，协方差矩阵 $\bm{\Sigma}_k$，根据公式 \eqref{eq:loglike} 初始化对数似然值\;
+        \Repeat{公式 \eqref{eq:loglike} 中的值没有明显变化}{
+            \For{$n\leftarrow 1$ to $N$}{
+                \For{$k\leftarrow 1$ to $K$}{
+                    $\gamma_{nk}^{(t)}\leftarrow \frac{\mathcal{N}(\bm{x}_n|\bm{\mu}_k,\bm{\Sigma}_k)}{\sum_{j=1}^K\mathcal{N}(\bm{x}_n|\bm{\mu}_j,\bm{\Sigma}_j)}$\tcc*[r]{E 步}
+                }
+            }
+            \For{$k\leftarrow 1$ to $K$}{
+                $\bm{\mu}_k^{(t+1)}\leftarrow\frac{\sum_{n=1}^N\gamma_{nk}^{(t)}\bm{x}_n}{\sum_{n=1}^N\gamma_{nk}}$\;
+                $\bm{\Sigma}_k^{(t+1)}\leftarrow\frac{\sum_{n=1}^N\gamma_{nk}^{(t)}(\bm{x}_n-\bm{\mu}_k^{(t+1)})(\bm{x}_n-\bm{\mu}_k^{(t+1)})^T}{\sum_{n=1}^N\gamma_{nk}}$\tcc*[r]{M 步}
+            }
+        }
+    \end{algorithm}
+
+    \section{k-mean 与 CL}
 \end{document}

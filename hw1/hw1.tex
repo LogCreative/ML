@@ -93,22 +93,139 @@
 
     \begin{algorithm}
         \caption{含方差软赋值的 k-mean 算法}\label{alg:vark}
-        \KwIn{数据点 $\bm{X}={\bm{x}_n}_{n=1}^N$, 聚类数目 $K$}
+        \KwIn{数据点 $\bm{X}=\{\bm{x}_n\}_{n=1}^N$, 聚类数目 $K$}
         \KwOut{聚类的分类结果 $\bm{\mu}_j,\bm{\Sigma}_j,\quad\forall j\in \mathbb{N}\cap[1,K]$}
         \BlankLine
         初始化均值矩阵 $\bm{\mu}_k$，协方差矩阵 $\bm{\Sigma}_k$，根据公式 \eqref{eq:loglike} 初始化对数似然值\;
         \Repeat{公式 \eqref{eq:loglike} 中的值没有明显变化}{
             \For{$n\leftarrow 1$ to $N$}{
                 \For{$k\leftarrow 1$ to $K$}{
-                    $\gamma_{nk}^{(t)}\leftarrow \frac{\mathcal{N}(\bm{x}_n|\bm{\mu}_k,\bm{\Sigma}_k)}{\sum_{j=1}^K\mathcal{N}(\bm{x}_n|\bm{\mu}_j,\bm{\Sigma}_j)}$\tcc*[r]{E 步}
+                    \begin{equation}
+                        \gamma_{nk}^{(t)}\leftarrow \frac{\mathcal{N}(\bm{x}_n|\bm{\mu}_k,\bm{\Sigma}_k)}{\sum_{j=1}^K\mathcal{N}(\bm{x}_n|\bm{\mu}_j,\bm{\Sigma}_j)}
+                    \end{equation}
                 }
             }
             \For{$k\leftarrow 1$ to $K$}{
-                $\bm{\mu}_k^{(t+1)}\leftarrow\frac{\sum_{n=1}^N\gamma_{nk}^{(t)}\bm{x}_n}{\sum_{n=1}^N\gamma_{nk}}$\;
-                $\bm{\Sigma}_k^{(t+1)}\leftarrow\frac{\sum_{n=1}^N\gamma_{nk}^{(t)}(\bm{x}_n-\bm{\mu}_k^{(t+1)})(\bm{x}_n-\bm{\mu}_k^{(t+1)})^T}{\sum_{n=1}^N\gamma_{nk}}$\tcc*[r]{M 步}
+                \begin{align}
+                    \bm{\mu}_k^{(t+1)}&\leftarrow\frac{\sum_{n=1}^N\gamma_{nk}^{(t)}\bm{x}_n}{\sum_{n=1}^N\gamma_{nk}}\\
+                    \bm{\Sigma}_k^{(t+1)}&\leftarrow\frac{\sum_{n=1}^N\gamma_{nk}^{(t)}(\bm{x}_n-\bm{\mu}_k^{(t+1)})(\bm{x}_n-\bm{\mu}_k^{(t+1)})^T}{\sum_{n=1}^N\gamma_{nk}}
+                \end{align}
             }
         }
+        \Return{$\bm{\mu},\bm{\Sigma}$}
     \end{algorithm}
 
     \section{k-mean 与 CL}
+        \subsection{k-mean 与 CL 的比较}\label{sec:cl}
+        
+        见表 \ref{tab:comp}。
+        以及，如果将 k-mean 按照 CL 的方法以在线版本的视角去看，可以看到两者在公式上的联系。
+
+        对于一个聚类 $k$ 的前 $N$ 个数据点，获得该聚类的均值点
+        \begin{equation}
+            \mu^{(N)}_k=\frac{1}{N}\sum_{n=1}^Nx_n
+        \end{equation}
+        如果该聚类在下一轮后多了一个点，那么更新该聚类的均值点后
+        \begin{align}
+            \mu^{(N+1)}_k&=\frac{1}{N+1}\sum_{n=1}^{N+1}x_n \nonumber\\
+            &=\frac{1}{N+1}\left(N\mu^{(N)}_k+x_{N+1}\right)\nonumber\\
+            &=\mu^{(N)}_k+\frac{1}{N+1}\left(x_{N+1}-\mu^{(N)}_k\right)\label{eq:kmean}
+        \end{align}
+        对比与 CL 的更新公式
+        \begin{equation}
+            \mu^{(N+1)}_k = \mu^{(N)}_k + \eta p_{k,n}\left(x_{N+1}-\mu^{(N)}_k\right)\label{eq:cl}
+        \end{equation}
+        这里
+        \begin{equation}
+            p_{k,n}=\begin{cases}
+                1, & \text{如果 }k=\arg\min_j\|x_n-\mu_k\|^2\\
+                0, & \text{其他情况}.
+            \end{cases}\label{eq:clcond}
+        \end{equation}
+        可见公式 \eqref{eq:kmean} 是公式 \eqref{eq:cl} 在 $\eta=\frac{1}{N+1}$ 和该点被选中时 $p_{k,n}=1$ 的特殊情形。
+
+        \begin{table}
+            \centering
+            \caption{k-mean 与 CL 的比较}\label{tab:comp}
+            \begin{tabular}{>{\bfseries}lcc}
+                \toprule
+                   & k-mean & CL \\
+                \midrule
+                算法类型 & 批学习算法 & 在线学习算法 \\
+                超参数 & 不需要 & 需要学习率 $\eta$ \\
+                更新方法 & 每次需要遍历 & 每次只更新一个点 \\
+                复杂度 & 高 & 相对低 \\
+                \midrule
+                聚类数目 & \multicolumn{2}{c}{无法决定} \\
+                初始化 & \multicolumn{2}{c}{收敛速度依赖初始化} \\
+                \bottomrule
+            \end{tabular}
+        \end{table}
+
+        \subsection{RPCL 版本的 k-mean} 
+
+        RPCL 改变了公式 \eqref{eq:clcond} 使其疏远竞争点
+        \begin{equation}
+            p_{k,n}=\begin{cases}
+                1, & \text{如果 }k=c=\arg\min_j\|x_n-\mu_k\|^2\\
+                -\gamma, & \text{如果 }k=r=\arg\min_{j\neq c}\|x_n-\mu_k\|^2\\
+                0, & \text{其他情况}.
+            \end{cases}\label{eq:rpcl}
+        \end{equation}
+        这里 $\gamma$ 为可变参量，一般范围是 $[0.05,0.1]$。
+
+        在第 \ref{sec:cl} 节我们了解到 k-mean 是 CL 的一个特殊情形，为了将 RPCL 适配 k-mean，将公式 \eqref{eq:rpcl} 适配进去，得到算法 \ref{alg:rpclk}。这个算法每次会进行批量运算，但会增加移开竞争对手的这个过程。
+
+        \begin{algorithm}
+            \caption{RPCL 版本的 k-mean 算法}\label{alg:rpclk}
+            \KwIn{数据点 $\bm{X}=\{x_n\}_{n=1}^N$，最大聚类数目 $K$，疏远参量 $\gamma$，学习率 $\eta$}
+            \KwOut{聚类的分类结果 $\bm{\mu}_j,\quad\forall j\in\mathbb{N}\cap[1,K]$}
+            \BlankLine
+            初始化均值 $\bm{\mu}_k$\;
+            \Repeat{$\bm{\mu}_k$没有明显变化}{
+                \For{$n\leftarrow 1$ to $N$}{
+                    计算到每个聚类的距离$\bm{E}=\{|\bm{x}_n-\bm{\mu}_k\|\}_{k=1}^K$\;
+                    $c\leftarrow\arg\min_k\bm{E}, r\leftarrow\arg\min_{k\neq c}\bm{E}$\;
+                    \For{$k\leftarrow 1$ to $K$}{
+                        按照公式 \eqref{eq:rpcl} 计算 $p_{k,n}$\;
+                    }
+                }
+                \For{$k\leftarrow 1$ to $K$}{
+                    \begin{align}
+                        \bm{\mu}_k^{(t)}&=\frac{\sum_{n}p_{k,n}\bm{x}_n}{\sum_{n}p_{k,n}}&&\forall n:p_{k,n}=1\\
+                        \bm{\mu}_k^{(t+1)}&=\bm{\mu}_k^{(t)}+\sum_{n}\eta p_{k,n}\left(\bm{x}_{n}-\bm{\mu}_k^{(t)}\right)&&\forall n:p_{k,n}<0
+                    \end{align}
+                }
+            }
+            \Return{$\bm{\mu}$}\;
+        \end{algorithm}
+
+        % 训练过程
+
+    \section{GMM 模型选择}
+
+    \subsection{生成 GMM 数据}\label{sec:datagen}
+
+    对于 $L$ 维、$K$ 个子模型的高斯混合模型（GMM），其概率密度函数定义为
+    \begin{equation}
+        p(\bm{x}) = \sum_{k=1}^K w_k \mathcal{N}(\bm{x}|\bm{\mu}_k,\bm{\Sigma}_k)
+    \end{equation}
+    其中
+    \begin{equation}\label{eq:weight}
+        \sum_{k=1}^K w_k = 1
+    \end{equation}
+
+    算法 \ref{alg:gmmgen} 展示了通过随机化参量、多项分布获得每个子模型的样本数、多维高斯分布采样得到 GMM 的过程\cite{gmmgen}。
+
+    \begin{algorithm}
+        \caption{生成 GMM 数据}\label{alg:gmmgen}
+        如果指定随机种子，则初始化随机种子\;
+        随机生成权重 $w_k$，归一化以满足公式 \eqref{eq:weight} 中的条件\;
+        借助 \verb"numpy" 库生成随机的 $K$ 个 $L\times (K+1)$ 矩阵，计算协方差矩阵作为 GMM 数据的随机参量 $\bm{\Sigma}_k$（这一步主要为了保证协方差矩阵的对称正定\cite{multinorm}），对于均值 $\bm{\mu}_k$ 直接随机坐标并扩大 $2K$ 倍以保持一定的距离\;
+        通过多项分布得到每个子模型的样本数 $N_k$\;
+        对每个子模型通过多维高斯模型采样对应的样本数次数，合并得到全部的样本\;
+    \end{algorithm}
+    
+
+    \bibliography{ref}
 \end{document}

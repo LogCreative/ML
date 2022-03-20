@@ -33,9 +33,6 @@ class RPCLK:
                 axis=1,
             )
 
-            for k in self.stale_k:
-                sqrdist[k] = np.inf
-
             c = np.argmin(sqrdist)
             contrib[c][i] = 1
 
@@ -50,8 +47,6 @@ class RPCLK:
         dataset_size = self.dataset.shape[0]
         dim = self.dataset.shape[1]
         for k in range(self.cluster_num):
-            if k in self.stale_k:
-                continue
             if np.sum(contrib_one[k]) != 0:
                 means[k] = np.average(self.dataset, weights=contrib_one[k], axis=0)
                 means[k] += (
@@ -63,7 +58,9 @@ class RPCLK:
                     * self.learning_rate
                 )
             else:
-                self.stale_k.append(k)
+                means = self.init_means()
+                print("Reinitialization.")
+                break
         return means
 
     def isStopping(self, delta):
@@ -77,7 +74,7 @@ class RPCLK:
                 self.stale_step = 0
         return False
 
-    def train(self, random_seed=None):
+    def train(self, visual=False, random_seed=None):
         self.means = self.init_means(random_seed)
 
         self.deltas = []
@@ -85,16 +82,15 @@ class RPCLK:
 
         self.stale_k = []
 
+        if visual: self.visualize_init()
+
         while True:
             self.contrib = self.contribution(self.means)
             old_means = copy.deepcopy(self.means)
             self.means = self.iteration(self.means, self.contrib)
             delta = np.sum(np.sum(np.square(self.means - old_means), axis=1))
-            
-            if self.isStopping(delta):
-                break
-
-        print(len(self.stale_k))
+            if self.isStopping(delta): break
+            if visual: self.visualize_hook()
 
         return self.means
 
@@ -103,22 +99,38 @@ class RPCLK:
             cluster_points = self.dataset[np.where(self.contrib[k] == 1)]
             ax.plot(cluster_points[:, 0], cluster_points[:, 1], '.', color=plt.cm.tab20(k))
 
+    def visualize_center(self, ax):
+        for k in range(self.cluster_num):
+            ax.plot(self.means[:,0], self.means[:, 1], 'x', color='red')
+
     def visualize_delta(self, ax):
         ax.plot(self.deltas)
+
+    def visualize_init(self):
+        plt.ion()
+        self.train_fig = plt.figure()
+        self.train_ax = plt.axes()
+
+    def visualize_hook(self):
+        self.train_ax.clear()
+        self.visualize(self.train_ax)
+        self.visualize_center(self.train_ax)
+        self.train_ax.set_title("#%2d delta = %.2f" % (len(self.deltas), self.deltas[len(self.deltas)-1]))
+        plt.pause(0.5)
 
 
 if __name__ == "__main__":
     gmmdata = GMMData(cluster_num=3, dim=2, sample_size=300, random_seed=42)
     dataset = gmmdata.get_data()
-    rpclk = RPCLK(dataset, cluster_num=3, learning_rate=0.01, gamma=0.1)
-    means = rpclk.train()
+    rpclk = RPCLK(dataset, cluster_num=10, learning_rate=0.01, gamma=0.05)
+    means = rpclk.train(True)
 
-    fig = plt.figure()
-    ax = plt.axes()  # projection='3d' is required if you use 3-D data.
-    rpclk.visualize(ax)
-    plt.show()
+    # fig = plt.figure()
+    # ax = plt.axes()  # projection='3d' is required if you use 3-D data.
+    # rpclk.visualize(ax)
+    # plt.show()
 
-    fig = plt.figure()
-    ax = plt.axes()
-    rpclk.visualize_delta(ax)
-    plt.show()
+    # fig = plt.figure()
+    # ax = plt.axes()
+    # rpclk.visualize_delta(ax)
+    # plt.show()

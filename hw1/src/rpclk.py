@@ -5,10 +5,9 @@ from datagen import GMMData
 
 
 class RPCLK:
-    def __init__(self, dataset, cluster_num, learning_rate, gamma):
+    def __init__(self, dataset, cluster_num, gamma):
         self.dataset = dataset
         self.cluster_num = cluster_num
-        self.learning_rate = learning_rate
         self.gamma = gamma
 
     def init_means(self, random_seed=None):
@@ -26,10 +25,10 @@ class RPCLK:
         return means
 
     def contribution(self, means):
-        contrib = np.zeros((self.cluster_num, self.dataset.shape[0]))
+        contrib = np.zeros((len(means), self.dataset.shape[0]))
         for i, point in enumerate(self.dataset):
             sqrdist = np.sum(
-                np.square(np.array([point]).repeat(self.cluster_num, axis=0) - means),
+                np.square(np.array([point]).repeat(len(means), axis=0) - means),
                 axis=1,
             )
 
@@ -41,12 +40,16 @@ class RPCLK:
             contrib[r][i] = -self.gamma
         return contrib
 
-    def iteration(self, means, contrib):
+    def iteration(self, means, contrib, lr):
         contrib_one = np.clip(contrib, 0, 1)
         contrib_neg = np.clip(contrib, -self.gamma, 0)
         dataset_size = self.dataset.shape[0]
         dim = self.dataset.shape[1]
-        for k in range(self.cluster_num):
+
+        stale_k = []
+        old_means = copy.deepcopy(self.means)
+
+        for k in range(len(means)):
             if np.sum(contrib_one[k]) != 0:
                 means[k] = np.average(self.dataset, weights=contrib_one[k], axis=0)
                 means[k] += (
@@ -55,18 +58,21 @@ class RPCLK:
                         * np.array([contrib_neg[k]]).repeat(dim, axis=0).T,
                         axis=0,
                     )
-                    * self.learning_rate
+                    * lr
                 )
             else:
-                means = self.init_means()
-                print("Reinitialization.")
-                break
-        return means
+                stale_k.append(k)
+
+        delta = np.sum(np.sum(np.square(self.means - old_means), axis=1))
+        
+        self.means = np.delete(means,stale_k,0)
+        self.contrib = np.delete(contrib,stale_k,0)
+        return delta
 
     def isStopping(self, delta):
         self.deltas.append(delta)
         if len(self.deltas) > 1:
-            if self.deltas[len(self.deltas) - 2] - delta <= 0:
+            if np.abs(self.deltas[len(self.deltas) - 2] - delta) <= 0.01:
                 self.stale_step += 1
                 if self.stale_step > 5:
                     return True
@@ -79,28 +85,30 @@ class RPCLK:
 
         self.deltas = []
         self.stale_step = 0
-
-        self.stale_k = []
+        lr = 0.01 * self.cluster_num
 
         if visual: self.visualize_init()
 
         while True:
+            prev_cluster_num = len(self.means)
             self.contrib = self.contribution(self.means)
-            old_means = copy.deepcopy(self.means)
-            self.means = self.iteration(self.means, self.contrib)
-            delta = np.sum(np.sum(np.square(self.means - old_means), axis=1))
+            delta = self.iteration(self.means, self.contrib, lr)
             if self.isStopping(delta): break
             if visual: self.visualize_hook()
-
-        return self.means
+            delta_diff = np.abs(self.deltas[len(self.deltas) - 2] - delta)
+            if len(self.means) != prev_cluster_num:
+                lr *= len(self.means) / self.cluster_num
+            if len(self.deltas) % 5 == 0:
+                lr /= 2                         # stair decay
+            
 
     def visualize(self, ax):
-        for k in range(self.cluster_num):
+        for k in range(len(self.means)):
             cluster_points = self.dataset[np.where(self.contrib[k] == 1)]
             ax.plot(cluster_points[:, 0], cluster_points[:, 1], '.', color=plt.cm.tab20(k))
 
     def visualize_center(self, ax):
-        for k in range(self.cluster_num):
+        for k in range(len(self.means)):
             ax.plot(self.means[:,0], self.means[:, 1], 'x', color='red')
 
     def visualize_delta(self, ax):
@@ -115,15 +123,15 @@ class RPCLK:
         self.train_ax.clear()
         self.visualize(self.train_ax)
         self.visualize_center(self.train_ax)
-        self.train_ax.set_title("#%2d delta = %.2f" % (len(self.deltas), self.deltas[len(self.deltas)-1]))
+        self.train_ax.set_title("#%2d delta = %.2f K=%2d" % (len(self.deltas), self.deltas[len(self.deltas)-1], len(self.means)))
         plt.pause(0.5)
 
 
 if __name__ == "__main__":
-    gmmdata = GMMData(cluster_num=3, dim=2, sample_size=300, random_seed=42)
+    gmmdata = GMMData(cluster_num=3, dim=2, sample_size=1000, random_seed=20)
     dataset = gmmdata.get_data()
-    rpclk = RPCLK(dataset, cluster_num=10, learning_rate=0.01, gamma=0.05)
-    means = rpclk.train(True)
+    rpclk = RPCLK(dataset, cluster_num=8, gamma=0.05)
+    rpclk.train(True)
 
     # fig = plt.figure()
     # ax = plt.axes()  # projection='3d' is required if you use 3-D data.

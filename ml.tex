@@ -9,6 +9,7 @@
 \usepackage[UTF8]{ctex}
 
 \numberwithin{equation}{section}
+\graphicspath{{img/}}
 
 \usepackage{listings}
 \definecolor{grey}{rgb}{0.8,0.8,0.8}
@@ -42,6 +43,10 @@
 \lstdefinestyle{commandshell}{
     language=bash,numbers=none,frame=single,frameround=fttt,basicstyle=\normalsize\ttfamily
 }  % usage: \begin{lstlisting}[style=commandshell]
+
+\def\filelink#1{
+    \href{./#1}{\ttfamily #1}
+}
 
 \newtheorem{theorem}{定理}
 \newtheorem{lemma}[theorem]{引理}

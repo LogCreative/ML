@@ -209,9 +209,32 @@
 
         \subsection{训练结果}
         
-        生成数据的细节见第 \ref{sec:datagen} 节。请注意，由于 k-mean 和 RPCL 算法都依赖于初始化，所以分类结果的好坏也会与初始化相关。
+        生成数据的细节见第 \ref{sec:datagen} 节，设定生成参数样本总量 $N=1000$，随机种子 $20$。
 
+        训练代码见 \filelink{src/rpclk.py}。
 
+        如图 \ref{fig:20}，对于 $K=3$ 的等量聚类，可以较好地分类。如图 \ref{fig:10}，对于 $K=12$ 的余量聚类，较小的 $\gamma$ 可能会导致不好的结果，这种没有办法完全竞争的情形可以通过调高 $\gamma$ 如图 \ref{fig:30} 实现。
+        
+        请注意，由于 k-mean 和 RPCL 算法都依赖于初始化，所以分类结果的好坏也会与初始化相关。RPCL 化后一定程度上可以减少聚类数目至期望值。
+
+        \begin{figure}
+            \subfigure[$K=3, \gamma=0.05$]{\label{fig:20}
+                \includegraphics[width=0.33\textwidth]{20-3}
+                \includegraphics[width=0.33\textwidth]{20-9}
+                \includegraphics[width=0.33\textwidth]{20-21}
+            }
+            \subfigure[$K=12, \gamma=0.05$]{\label{fig:10}
+                \includegraphics[width=0.33\textwidth]{10-1}
+                \includegraphics[width=0.33\textwidth]{10-5}
+                \includegraphics[width=0.33\textwidth]{10-19}
+            }
+            \subfigure[$K=12, \gamma=0.1$]{\label{fig:30}
+                \includegraphics[width=0.33\textwidth]{30-1}
+                \includegraphics[width=0.33\textwidth]{30-3}
+                \includegraphics[width=0.33\textwidth]{30-12}
+            }
+            \caption{RPCL 版本的 k-mean 算法训练结果}
+        \end{figure}
 
     \section{GMM 模型选择}
 
@@ -226,7 +249,7 @@
         \sum_{k=1}^K w_k = 1
     \end{equation}
 
-    算法 \ref{alg:gmmgen} 展示了通过随机化参量、多项分布获得每个子模型的样本数、多维高斯分布采样得到 GMM 的过程\cite{gmmgen}。
+    算法 \ref{alg:gmmgen} 展示了通过随机化参量、多项分布获得每个子模型的样本数、多维高斯分布采样得到 GMM 的过程\cite{gmmgen}。生成数据代码见 \filelink{src/datagen.py}。
 
     \begin{algorithm}
         \caption{生成 GMM 数据}\label{alg:gmmgen}

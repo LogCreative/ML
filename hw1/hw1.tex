@@ -178,13 +178,13 @@
 
         \begin{algorithm}
             \caption{RPCL 版本的 k-mean 算法}\label{alg:rpclk}
-            \KwIn{数据点 $\bm{X}=\{x_n\}_{n=1}^N$，最大聚类数目 $K$，疏远参量 $\gamma$，学习率 $\eta$}
+            \KwIn{数据点 $\bm{X}=\{x_n\}_{n=1}^N$，最大聚类数目 $K$，学习率 $\eta$，疏远参量 $\gamma$}
             \KwOut{聚类的分类结果 $\bm{\mu}_j,\quad\forall j\in\mathbb{N}\cap[1,K]$}
             \BlankLine
             初始化均值 $\bm{\mu}_k$\;
             \Repeat{$\bm{\mu}_k$没有明显变化}{
                 \For{$n\leftarrow 1$ to $N$}{
-                    计算到每个聚类的距离$\bm{E}=\{|\bm{x}_n-\bm{\mu}_k\|\}_{k=1}^K$\;
+                    计算到每个聚类的距离$\bm{E}=\{\|\bm{x}_n-\bm{\mu}_k\|\}_{k=1}^K$\;
                     $c\leftarrow\arg\min_k\bm{E}, r\leftarrow\arg\min_{k\neq c}\bm{E}$\;
                     \For{$k\leftarrow 1$ to $K$}{
                         按照公式 \eqref{eq:rpcl} 计算 $p_{k,n}$\;
@@ -193,14 +193,16 @@
                 \For{$k\leftarrow 1$ to $K$}{
                     \begin{align}
                         \bm{\mu}_k^{(t)}&=\frac{\sum_{n}p_{k,n}\bm{x}_n}{\sum_{n}p_{k,n}}&&\forall n:p_{k,n}=1\\
-                        \bm{\mu}_k^{(t+1)}&=\bm{\mu}_k^{(t)}+\sum_{n}\eta p_{k,n}\left(\bm{x}_{n}-\bm{\mu}_k^{(t)}\right)&&\forall n:p_{k,n}<0
+                        \bm{\mu}_k^{(t+1)}&=\bm{\mu}_k^{(t)}+\eta\sum_{n} p_{k,n}\left(\bm{x}_{n}-\bm{\mu}_k^{(t)}\right)&&\forall n:p_{k,n}<0
                     \end{align}
                 }
             }
             \Return{$\bm{\mu}$}\;
         \end{algorithm}
 
-        % 训练过程
+        \subsection{训练过程}
+        
+        生成数据的细节见第 \ref{sec:datagen} 节。
 
     \section{GMM 模型选择}
 

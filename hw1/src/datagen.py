@@ -19,16 +19,19 @@ class GMMData:
             sample_size (int, optional): The total number of sampling points. Defaults to 300.
             random_seed (int, optional): The random seed for numpy. Defaults to None.
         """
-        if random_seed is not None:
-            np.random.seed(random_seed)
         self.cluster_num = cluster_num
         self.dim = dim
         self.sample_size = sample_size
+        self.random_seed = random_seed
         self.param_gen()
         self.data_gen()
 
     def param_gen(self):
         """Refresh the parameters for weight, mean and covariance of different clusters."""
+
+        if self.random_seed is not None:
+            np.random.seed(self.random_seed)
+
         self.weight_list = np.random.rand(self.cluster_num)
         weight_sum = np.sum(self.weight_list)
         self.weight_list /= weight_sum
@@ -41,8 +44,13 @@ class GMMData:
             sample_arr = np.random.rand(self.dim, (self.cluster_num + 1))
             self.cov_list.append(np.cov(sample_arr))
 
+        np.random.seed()
+
     def data_gen(self):
         """Refresh dataset based on the parameters generated in param_gen()"""
+        if self.random_seed is not None:
+            np.random.seed(self.random_seed)
+
         sample_nums = np.random.multinomial(self.sample_size, self.weight_list, 1)[0]
         cluster_samples = []
         for k in range(self.cluster_num):
@@ -52,6 +60,8 @@ class GMMData:
                 )
             )
         self.data = np.concatenate(cluster_samples)
+
+        np.random.seed()
 
     def get_data(self):
         """Get the dataset.

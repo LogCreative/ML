@@ -178,10 +178,10 @@
 
         \begin{algorithm}
             \caption{RPCL 版本的 k-mean 算法}\label{alg:rpclk}
-            \KwIn{数据点 $\bm{X}=\{x_n\}_{n=1}^N$，最大聚类数目 $K$，学习率 $\eta$，疏远参量 $\gamma$}
+            \KwIn{数据点 $\bm{X}=\{x_n\}_{n=1}^N$，最大聚类数目 $K$，疏远参量 $\gamma$}
             \KwOut{聚类的分类结果 $\bm{\mu}_j,\quad\forall j\in\mathbb{N}\cap[1,K]$}
             \BlankLine
-            初始化均值 $\bm{\mu}_k$\;
+            初始化均值 $\bm{\mu}_k$，学习率 $\eta=0.01K$\;
             \Repeat{$\bm{\mu}_k$没有明显变化}{
                 \For{$n\leftarrow 1$ to $N$}{
                     计算到每个聚类的距离$\bm{E}=\{\|\bm{x}_n-\bm{\mu}_k\|\}_{k=1}^K$\;
@@ -191,18 +191,27 @@
                     }
                 }
                 \For{$k\leftarrow 1$ to $K$}{
+                    \uIf{聚类 $k$ 不包含任何点}{
+                        本轮结束移除聚类 $k$\;
+                    }
+                    \Else{
                     \begin{align}
                         \bm{\mu}_k^{(t)}&=\frac{\sum_{n}p_{k,n}\bm{x}_n}{\sum_{n}p_{k,n}}&&\forall n:p_{k,n}=1\\
                         \bm{\mu}_k^{(t+1)}&=\bm{\mu}_k^{(t)}+\eta\sum_{n} p_{k,n}\left(\bm{x}_{n}-\bm{\mu}_k^{(t)}\right)&&\forall n:p_{k,n}<0
-                    \end{align}
+                    \end{align}\;
+                    }
                 }
+                \If{聚类数目有变动}{衰减学习率\tcc*[r]{防止早期学习率过高}}
+                按时间阶梯衰减学习率\tcc*[r]{防止末期学习率过高}
             }
             \Return{$\bm{\mu}$}\;
         \end{algorithm}
 
-        \subsection{训练过程}
+        \subsection{训练结果}
         
-        生成数据的细节见第 \ref{sec:datagen} 节。
+        生成数据的细节见第 \ref{sec:datagen} 节。请注意，由于 k-mean 和 RPCL 算法都依赖于初始化，所以分类结果的好坏也会与初始化相关。
+
+
 
     \section{GMM 模型选择}
 

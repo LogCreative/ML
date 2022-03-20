@@ -54,7 +54,10 @@ class RPCLK:
                 means[k] = np.average(self.dataset, weights=contrib_one[k], axis=0)
                 means[k] += (
                     np.sum(
-                        (self.dataset - np.array([means[k]]).repeat(dataset_size, axis=0))
+                        (
+                            self.dataset
+                            - np.array([means[k]]).repeat(dataset_size, axis=0)
+                        )
                         * np.array([contrib_neg[k]]).repeat(dim, axis=0).T,
                         axis=0,
                     )
@@ -64,9 +67,9 @@ class RPCLK:
                 stale_k.append(k)
 
         delta = np.sum(np.sum(np.square(self.means - old_means), axis=1))
-        
-        self.means = np.delete(means,stale_k,0)
-        self.contrib = np.delete(contrib,stale_k,0)
+
+        self.means = np.delete(means, stale_k, 0)
+        self.contrib = np.delete(contrib, stale_k, 0)
         return delta
 
     def isStopping(self, delta):
@@ -87,29 +90,32 @@ class RPCLK:
         self.stale_step = 0
         lr = 0.01 * self.cluster_num
 
-        if visual: self.visualize_init()
+        if visual:
+            self.visualize_init()
 
         while True:
             prev_cluster_num = len(self.means)
             self.contrib = self.contribution(self.means)
             delta = self.iteration(self.means, self.contrib, lr)
-            if self.isStopping(delta): break
-            if visual: self.visualize_hook()
-            delta_diff = np.abs(self.deltas[len(self.deltas) - 2] - delta)
-            if len(self.means) != prev_cluster_num:
+            if self.isStopping(delta):
+                break
+            if visual:
+                self.visualize_hook()
+            if len(self.means) != prev_cluster_num:  # For early changes
                 lr *= len(self.means) / self.cluster_num
-            if len(self.deltas) % 5 == 0:
-                lr /= 2                         # stair decay
-            
+            if len(self.deltas) % len(self.means) == 0:
+                lr /= 2  # stair decay
 
     def visualize(self, ax):
         for k in range(len(self.means)):
             cluster_points = self.dataset[np.where(self.contrib[k] == 1)]
-            ax.plot(cluster_points[:, 0], cluster_points[:, 1], '.', color=plt.cm.tab20(k))
+            ax.plot(
+                cluster_points[:, 0], cluster_points[:, 1], ".", color=plt.cm.tab20(k)
+            )
 
     def visualize_center(self, ax):
         for k in range(len(self.means)):
-            ax.plot(self.means[:,0], self.means[:, 1], 'x', color='red')
+            ax.plot(self.means[:, 0], self.means[:, 1], "x", color="red")
 
     def visualize_delta(self, ax):
         ax.plot(self.deltas)
@@ -123,14 +129,17 @@ class RPCLK:
         self.train_ax.clear()
         self.visualize(self.train_ax)
         self.visualize_center(self.train_ax)
-        self.train_ax.set_title("#%2d delta = %.2f K=%2d" % (len(self.deltas), self.deltas[len(self.deltas)-1], len(self.means)))
+        self.train_ax.set_title(
+            "#%2d delta = %.2f K=%2d"
+            % (len(self.deltas), self.deltas[len(self.deltas) - 1], len(self.means))
+        )
         plt.pause(0.5)
 
 
 if __name__ == "__main__":
     gmmdata = GMMData(cluster_num=3, dim=2, sample_size=1000, random_seed=20)
     dataset = gmmdata.get_data()
-    rpclk = RPCLK(dataset, cluster_num=8, gamma=0.05)
+    rpclk = RPCLK(dataset, cluster_num=3, gamma=0.05)
     rpclk.train(True)
 
     # fig = plt.figure()

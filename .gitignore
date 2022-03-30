@@ -21,3 +21,5 @@ ref/
 
 __pycache__
 build/
+
+res/

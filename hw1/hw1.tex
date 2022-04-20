@@ -260,7 +260,9 @@
         对每个子模型通过多维高斯模型采样对应的样本数次数，合并得到全部的样本\;
     \end{algorithm}
 
-    \subsection{AIC 和 BIC 的模型选择比较}
+    \subsection{AIC 和 BIC}
+
+    首先计算出所有聚类数目取值 $k$ 下的模型，按照公式 \eqref{eq:kmax} 通过 AIC \eqref{eq:aic} 或 BIC \eqref{eq:bic} 的标准筛选最优聚类数目。采用 sklearn 的 \verb"sklearn.mixture.GaussianMixture" 实现 GMM 模型\cite{skgmm}。
 
     \begin{align}
         k^* &= {\arg\max}_{k=1,\cdots,K}J(k) \label{eq:kmax}\\
@@ -268,15 +270,13 @@
         J_\text{BIC}(k) &= \ln[p(X|\hat{\Theta}_k)] - \frac{\ln N}{2}d_m \label{eq:bic} 
     \end{align}
 
-    比较过程如下：首先计算出所有聚类数目取值 $k$ 下的模型，按照公式 \eqref{eq:kmax} 通过 AIC \eqref{eq:aic} 或 BIC \eqref{eq:bic} 的标准筛选最优聚类数目。
-
-    对每一个二元组 (目标聚类数目, 样本数量) 采用不同的随机种子分别对 AIC 和 BIC 进行多轮实验，采用 sklearn 的 \verb"sklearn.mixture.GaussianMixture" 实现 GMM 模型\cite{skgmm}，代码见 \filelink{src/em.py}，参量范围如表 \ref{tab:exparam} 所示，结果如图 \ref{fig:em_result} 所示。
+    对每一个二元组 (目标聚类数目, 样本数量) 采用不同的随机种子分别对 AIC 和 BIC 进行多轮实验，代码见 \filelink{src/em.py}，参量范围如表 \ref{tab:exparam} 所示，结果如图 \ref{fig:em_result} 所示，红色曲面为 AIC 的结果，蓝色曲面为 BIC 的结果。
 
     \begin{figure}
         \begin{minipage}[b]{.5\linewidth}
             \centering
             \includegraphics[width=\linewidth]{em_result.png}
-            \caption{AIC 与 BIC 比较的实验结果}\label{fig:em_result}
+            \caption{AIC (红色) 与 BIC (蓝色) 比较的实验结果}\label{fig:em_result}
         \end{minipage}
         \begin{minipage}[b]{.5\linewidth}
             \centering
@@ -288,6 +288,7 @@
                 样本数量 & (50,100,200,400,800) \\
                 \midrule
                 随机种子 & 11 个 \\
+                最大聚类数目 & 目标聚类数目 + 3 \\
                 \bottomrule
             \end{tabular}
             \captionof{table}{实验参量}\label{tab:exparam}
@@ -308,8 +309,41 @@
         \subfigure[AIC 与 BIC 均错误，数据集分离性差 $K=8,N=200$]{\includegraphics[width=0.8\linewidth]{em_8_200_271.png}}
         \subfigure[BIC 正确，AIC 错误地倾向于较多类别 $K=4,N=200$]{\includegraphics[width=0.8\linewidth]{em_4_200_451.png}}
         \subfigure[AIC 正确，BIC 错误地倾向于较少类别 $K=6,N=400$]{\includegraphics[width=0.8\linewidth]{em_6_400_231.png}}
-        \caption{错分类情形}\label{fig:false}
+        \caption{AIC 与 BIC 错分类情形}\label{fig:false}
     \end{figure}
+    
+    \subsection{VBEMGMM}
+
+    VBEMGMM (Variational Bayesian estimation of a Gaussian mixture) 采用了 Bayesian 推理，遵循 Occam 准则选择最优的聚类数目。采用 sklearn 的 \verb"sklearn.mixture.BayesianGuassianMixture" 实现 VBEMGMM 模型\cite{skvbgmm}。
+
+    向上面的测试方法中加入 VBEMGMM 的结果，正确率对比如图 \ref{fig:em_result_overall} 所示，绿色曲面代表 VBEMGMM 的结果。结果显示样本数量较少时，并不如 BIC 的分类正确率高；当样本数量变大后，与前两者的分类正确准确率基本一致。
+
+    查看其中一个 VBEMGMM 错误分类的情形，如图 \ref{fig:vbemgmm} 所示。可以看到有一个类别由于点较少，导致可能会由于 Occam 准则被错误分类为另一组。也就意味着 VBEMGMM 对于每个聚类内样本数量较少的情况可能表现不会那么理想。
+
+    \subsection{模型选择小结}
+
+    当每个聚类的样本数量充足时，可以考虑使用 VBEMGMM 自动得到聚类数目，而不用跑很多次聚类过程。而当每个聚类的样本数量不充足时，如果聚类的分离比较明确，则可以使用 BIC 来得到更少的聚类数目；如果聚类有粘合时，则可以使用 AIC 来得到更多的聚类数目，获取隐性的分类信息。
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\linewidth]{em_5_400_401.png}
+        \caption{VBEMGMM 分类错误情形 $K=5,N=400$}\label{fig:vbemgmm}
+    \end{figure}
+
+    \begin{figure}
+        \begin{minipage}[b]{.5\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{em_result_overall.png}
+            \caption{AIC (红色), BIC (蓝色), VBEMGMM (绿色) 的正确分类情况曲面图}\label{fig:em_result_overall}
+        \end{minipage}
+        \begin{minipage}[b]{.5\linewidth}
+            \centering
+            \captionof{table}{AIC, BIC, VBEMGMM 的正确分类情况表，随机种子数为 11}\label{tab:em_result}
+            \pgfplotstabletypeset{img/em_result.dat}
+        \end{minipage}
+    \end{figure}
+
+    \clearpage
 
     \bibliography{ref}
 \end{document}

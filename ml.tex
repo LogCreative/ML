@@ -62,6 +62,23 @@
 \usepackage[colorlinks]{hyperref}
 \usepackage{zhlipsum}
 \usepackage{caption}
+\usepackage{pgfplotstable}
+\pgfplotstableset{
+      every table/.style={
+        font={\small\sffamily},
+      },
+      every head row/.style={
+        before row={
+          \toprule
+        },
+        after row={
+            \midrule
+          },
+        },
+      every last row/.style={
+        after row=\bottomrule
+      },
+}
 
 \author{李子龙\\
 上海交通大学\\

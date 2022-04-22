@@ -1,0 +1,100 @@
+%&"../ml"
+\begin{document}
+    \title{第二次作业}
+    \maketitle
+
+    \section{PCA}
+
+    \subsection{特征值分解}
+
+    \begin{algorithm}
+        \caption{特征值分解 PCA}
+        \KwIn{数据集 $\mathbf{X}=\{\mathbf{x}_1,\mathbf{x}_2,\cdots,\mathbf{x}_N\}, \mathbf{x}_t\in\mathbb{R}^{n\times 1}$}
+        \KwOut{主成分 $\mathbf{w}$}
+        \BlankLine
+        计算平均值 $\mathbf{\mu}\leftarrow\frac{1}{N}\sum_{i=1}^N \mathbf{x}_i$\;
+        \ForEach{$i\leftarrow 1$ to $N$}{
+            $\mathbf{x}_i\leftarrow \mathbf{x}_i - \mathbf{\mu}$\;
+        }
+        计算散度矩阵 $C\leftarrow XX^T$\;
+        特征值分解求 $C$ 的特征值 $\lambda_1\geq\lambda_2\geq\cdots\geq\lambda_n$ 与对应的特征向量 $\mathbf{v}_1,\mathbf{v}_2,\cdots,\mathbf{v}_n$\;
+        选取最大的特征值对应的特征向量与数据的乘积即为主成分 $\mathbf{w}\leftarrow\mathbf{v_1}^T\mathbf{X}$\;
+        \Return{$\mathbf{w}$}\;
+    \end{algorithm}
+
+    \paragraph{优点}
+    
+    \begin{enumerate}
+        \item 简单易实现。
+        \item 解除线性相关。
+    \end{enumerate}
+    
+    \paragraph{缺点} 
+    
+    \begin{enumerate}
+        \item 需要的内存大，需要先计算散度矩阵，当样本数量很大时，这一步消耗的时间复杂度比较高。
+        \item 计算散度矩阵这一步在数据量较少时可能会丢失精度。
+        \item 只能压缩一个方向（行或列）。
+    \end{enumerate}
+
+    \subsection{奇异值分解}
+
+    \begin{algorithm}
+        \caption{奇异值分解}
+        \KwIn{数据集 $\mathbf{X}=\{\mathbf{x}_1,\mathbf{x}_2,\cdots,\mathbf{x}_N\}, \mathbf{x}_t\in\mathbb{R}^{n\times 1}$}
+        \KwOut{主成分 $\mathbf{w}$}
+        \BlankLine
+        计算平均值 $\mathbf{\mu}\leftarrow\frac{1}{N}\sum_{i=1}^N \mathbf{x}_i$\;
+        \ForEach{$i\leftarrow 1$ to $N$}{
+            $\mathbf{x}_i\leftarrow \mathbf{x}_i - \mathbf{\mu}$\;
+        }
+        奇异值分解 $\mathbf{X}=\mathbf{U}\mathbf{\Sigma}\mathbf{V}^T$\;
+        两边同乘 $\mathbf{U}^T$，$\mathbf{U}^T\mathbf{X}=\mathbf{\Sigma}\mathbf{V}^T$ 得到压缩数据\;
+        选取 $\mathbf{\Sigma}\mathbf{V}^T$ 中最大的那一个奇异值（习惯上应为左上角的值）对应的向量（一般为第一行）即为主成分 $\mathbf{w}$\;
+        \Return{$\mathbf{w}$}\;
+    \end{algorithm}
+
+    \paragraph{优点} 
+    \begin{enumerate}
+        \item 可以直接对非方阵 $\mathbf{X}$ 进行奇异值分解，而特征值分解需要分解方阵 $\mathbf{X}\mathbf{X}^T$。可免去计算 $\mathbf{X}\mathbf{X}^T$ 的中间步骤。
+        \item 计算奇异值已经有快速地数值算法，在需要在时间空间与精度直接抉择时，可以选择后者直接取出较大的奇异值，精度上的折中是可以接受的。
+        \item 既能压缩行又能压缩列。
+    \end{enumerate}
+
+    \paragraph{缺点} 
+
+    \begin{enumerate}
+        \item SVD 算法需要实现，算法实现难度比特征值分解大。
+        \item 分解后的矩阵缺少可解释性。
+    \end{enumerate}
+
+    \section{FA}
+
+    \begin{align}
+        p(\mathbf{y}|\mathbf{x}) &= \frac{p(\mathbf{x}|\mathbf{y})p(\mathbf{y})}{p(\mathbf{x})} \label{eq:b1} \\
+        &= \frac{G(\mathbf{x}|\mathbf{A}\mathbf{y}+\mu,\mathbf{\Sigma}_e)G(\mathbf{y}|0,\mathbf{\Sigma}_y)}{p(\mathbf{A}\mathbf{y}+\mu+\mathbf{e})} \label{eq:b2} \\
+        &= \frac{G(\mathbf{x}|\mathbf{A}\mathbf{y}+\mu,\mathbf{\Sigma}_e)G(\mathbf{y}|0,\mathbf{\Sigma}_y)}{G(\mathbf{y}|\mu+\mu_e,\mathbf{A}\mathbf{\Sigma}_y\mathbf{A}^T+\mathbf{\Sigma}_e)} \label{eq:b3}
+    \end{align}
+
+    公式 \eqref{eq:b1} 采用了贝叶斯规则，公式 \eqref{eq:b2} 采用了已知条件，公式 \eqref{eq:b3} 由下面的方式推导：
+    \begin{align*}
+        E(\mathbf{x}) &= E(\mathbf{A}\mathbf{y}+\mu+\mathbf{e}) \\
+        &= 0 + \mu + E(\mathbf{e}) \\
+        &= \mu + \mu_e\\
+        Cov(\mathbf{x}) &= Cov(\mathbf{A}\mathbf{y}+\mu+\mathbf{e}) 
+        \\
+        &= E((\mathbf{A}\mathbf{y}+\mu+\mathbf{e}-E(\mathbf{x}))(\mathbf{A}\mathbf{y}+\mu+\mathbf{e}-E(\mathbf{x}))^T) \\
+        &= E((\mathbf{A}\mathbf{y} + (\mathbf{e}-\mu_e))(\mathbf{A}\mathbf{y} + (\mathbf{e}-\mu_e))^T)\\
+        &= E(\mathbf{A}\mathbf{y}\mathbf{y}^T\mathbf{A}^T+\mathbf{A}\mathbf{y}(\mathbf{e}-\mathbf{\mu}_e)+(\mathbf{e}-\mathbf{\mu}_e)(\mathbf{Ay})^T+(\mathbf{e}-\mu_e)(\mathbf{e}-\mu_e)^T)\\
+        &= \mathbf{A}\mathbf{\Sigma}_y\mathbf{A} + \mathbf{\Sigma}_e
+    \end{align*}
+    而公式 \eqref{eq:b3} 就是答案。
+
+    \section{ICA}
+
+    
+    \section{FA 降维}
+
+    
+
+\end{document}

@@ -1,0 +1,24 @@
+\documentclass[tikz]{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepackage{pgfplotstable}
+\usepackage{CJKutf8}
+\usepgfplotslibrary{colorbrewer}
+\begin{document}
+\begin{CJK}{UTF8}{gbsn}
+\begin{tikzpicture}
+\begin{semilogxaxis}[view={16}{61},
+legend pos={outer north east},
+xlabel={$N$},
+ylabel={$\sigma^2$},
+zlabel={Score},
+grid={minor},
+]
+ \pgfplotstableread [] {../src/Ns.dat}{\ns};
+ \addplot3+ [surf,mesh/rows=6,mesh/cols=7,colormap/Blues,opacity=0.5,] table[x=N,y=s,z=aics,] {\ns};
+ \addplot3+ [surf,mesh/rows=6,mesh/cols=7,colormap/Reds,opacity=0.5,] table[x=N,y=s,z=bics,] {\ns};
+ \legend{AIC,BIC,}
+\end{semilogxaxis}
+\end{tikzpicture}
+\end{CJK}
+\end{document}

@@ -93,8 +93,93 @@
     \section{ICA}
 
     
+    
     \section{FA 降维}
 
-    
+    \subsection{数据生成}
+
+    数据生成代码见 \filelink{src/datagen.py}，这里我们固定 $\mu=0$，数据使用下面的方法生成：
+    \begin{align*}
+        \mathbf{y}_t&\sim G(\mathbf{y}|0,\mathbf{I})\\
+        \mathbf{e}_t&\sim G(\mathbf{e}|0,\sigma^2\mathbf{I})\\
+        \mathbf{x}_t&=\mathbf{A}\mathbf{y}_t + \mathbf{e}_t
+    \end{align*}
+    其中 $\mathbf{A}$ 随机选取于 $G(0,\mathbf{I})$，由数据生成开始时随机生成并固定。
+
+    \subsection{模型选择}
+
+    采用 \verb"sklearn.decomposition" 中的 \verb"FactorAnalysis" 进行分析，采用“二步法”：
+    \begin{align*}
+        m^* &= {\arg\max}_{m=1,\cdots,M}J(m)\\
+        J_\text{AIC}(m) &= \ln\left[p(X|\hat{\Theta}_m)\right] - d_m\\
+        J_\text{BIC}(m) &= \ln\left[p(X|\hat{\Theta}_m)\right] - \frac{\ln N}{2}d_m
+    \end{align*}
+    其中对于 FA 的自由参数个数
+    \begin{equation*}
+        d_m = nm + 1 - (1+2+\cdots+m) = nm + 1 - \frac{m(m-1)}{2}
+    \end{equation*}
+
+    \subsection{测试结果}
+
+    测试将对每一对指标取 10 个随机种子计算预测出的 $\hat{m}$ 与真实 $m$ 的差别，使用公式 \ref{eq:score} 计算得分，这个公式将会显示出平均而言是预测高了还是预测低了，这个值越接近于 0 越好。
+    \begin{equation}\label{eq:score}
+        \mathrm{Score} = \frac{\hat{m} - m}{m}
+    \end{equation}
+
+    \begin{figure}
+        \begin{minipage}[c]{.5\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{fig/nm.pdf}
+            \caption{$n$--$m$ 平均得分统计图}\label{fig:nm}
+        \end{minipage}
+        \begin{minipage}[b]{.5\linewidth}
+            \centering
+            \captionof{table}{参数范围}
+            \begin{tabular}{cl}
+                \toprule
+                类型 & 范围 \\
+                \midrule
+                $n$ & [5,10,15,20,25] \\
+                $m$ & [1,2,3,4,5] \\
+                随机种子个数 & 10 \\
+                \midrule
+                样本数量 $N$ & 200 \\
+                噪声方差 $\sigma^2$ & 0.1 \\
+                \bottomrule
+            \end{tabular}
+        \end{minipage}
+    \end{figure}
+
+    如图 \ref{fig:nm} 所示，对于不同的 $(n,m)$ 二元组，在 $m$ 比较大 $n$ 比较小时（左下角），AIC 和 BIC 预测表现都比较差，但是 AIC 略胜一筹；而 $m$比较小和 $n$ 比较大的时候（右上角），BIC 表现就比较好，AIC 往往会预测得略高一些。可见 AIC 更适合因素较多的时候，而 BIC 更适合因素单一的情况。
+
+    \begin{figure}
+        \begin{minipage}[c]{.5\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{fig/Ns.pdf}
+            \caption{$N$--$\sigma^2$ 平均得分统计图}\label{fig:Ns}
+        \end{minipage}
+        \begin{minipage}[b]{.5\linewidth}
+            \centering
+            \captionof{table}{参数范围}
+            \begin{tabular}{cl}
+                \toprule
+                类型 & 范围 \\
+                \midrule
+                样本数量 $N$ & [20, 50, 100, 200, 500, 1000] \\
+                噪声方差 $\sigma^2$ & [0, 0.05, 0.1, 0.2, 0.5, 1, 2] \\
+                随机种子个数 & 10 \\
+                \midrule
+                $n$ & 10 \\
+                $m$ & 5 \\
+                \bottomrule
+            \end{tabular}
+        \end{minipage}
+    \end{figure}
+
+    如图 \ref{fig:Ns} 所示，对于不同的 $(N,\sigma^2)$ 二元组，在这个范围内，AIC 都要比 BIC 要好一些（主要是 $m$ 比较大，在上一点已论证），而样本数量越少，噪声越大（左上角），两者表现就会越差，会预测出较少的因素，BIC 的表现会下降得更快一些。
+
+    \subsection{模型选择小结}
+
+    单一元素情况，BIC 更好一些；多元情况，AIC 更好一些。样本数量越多，噪声越小，模型选择的表现就越好。
 
 \end{document}

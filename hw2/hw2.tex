@@ -92,7 +92,25 @@
 
     \section{ICA}
 
+    如果 $\mathbf{s}$ 被分解为两个高斯分布 $N(0,\mathbf{I})$，那么 $\mathbf{s}$ 也将满足高斯分布。接收信号（作为源信号的线性组合） $\mathbf{x}=\mathbf{A}\mathbf{s}$ 也将是高斯分布，$E(\mathbf{s}_i^2)=1$。这将导致
+    \begin{align*}
+        E(\mathbf{x}) &= 0 \\
+        E(\mathbf{x}\mathbf{x}^T) &= E(\mathbf{A}\mathbf{s}\mathbf{s}^T\mathbf{A}^T) = \mathbf{A}\mathbf{A}^T
+    \end{align*}
+    如果对 $\mathbf{A}$ 右乘一个正交矩阵 $\mathbf{C}$ 得到 $\mathbf{A}^\prime = \mathbf{A}\mathbf{C}$，那么得到的新接收信号 $\mathbf{x}^\prime = \mathbf{A}^\prime \mathbf{s}$ 也将是高斯分布，$\mathbf{CC}^T=\mathbf{I}$，而且
+    \begin{align*}
+        E(\mathbf{x}^\prime) &= 0 \\
+        E(\mathbf{x}^\prime (\mathbf{x}^\prime)^T) &= E(\mathbf{ACs}\mathbf{s}^T(\mathbf{AC})^T) = \mathbf{ACC}^T\mathbf{A}^T = \mathbf{A}\mathbf{A}^T
+    \end{align*}
+    将无法通过不同的混淆矩阵来区分信号，也就无法预测 $\mathbf{A}$ 的信息，也就无法通过接收信号分离出源信号的信息。
     
+    另一方面，中心极限定理告诉我们，多个独立的自由变量之和近似服从高斯分布。考虑最后的复原过程
+    \begin{equation*}
+        \mathbf{y} = \mathbf{w}^T\mathbf{x} = \mathbf{w}^T\mathbf{A}\mathbf{s} = \mathbf{z}^T\mathbf{s}
+    \end{equation*}
+    这样 $\mathbf{y}$ 就会变成 $\mathbf{s}_i$ 的线性组合，它将比任何一个分量都接近于高斯，这种复原结果将与之前的源分量不应当高斯相违背，所以要寻找 $\mathbf{w}$ 最大化该式的非高斯性。
+    
+    所以对于希望分解为独立分量的 ICA 来说，最大化非高斯性是其原则之一。
     
     \section{FA 降维}
 
@@ -126,7 +144,7 @@
         \mathrm{Score} = \frac{\hat{m} - m}{m}
     \end{equation}
 
-    \begin{figure}
+    \begin{figure}[b]
         \begin{minipage}[c]{.5\linewidth}
             \centering
             \includegraphics[width=\linewidth]{fig/nm.pdf}

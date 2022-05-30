@@ -31,10 +31,12 @@ def run_mlp(dataset_name, feat_size):
         dataset_name (str): the dataset name
         feat_size (int): the feature size
     """
+    start_time = time.time()
     model = train_mlp(dataset_name, feat_size)
     acc = test_mlp(model, dataset_name + '.t', feat_size)
-    print("Dataset {} MLP Test Accuracy: {}".format(dataset_name, acc))
+    elapsed_time = time.time() - start_time
+    print("Dataset: {} | MLP Test Accuracy: {} | Training Time: {}".format(dataset_name, acc, elapsed_time))
 
-# run_mlp("leu",7129)
+run_mlp("leu",7129)
 run_mlp("madelon",500)
 run_mlp("ijcnn1",22)

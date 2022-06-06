@@ -86,4 +86,98 @@
         \end{tabular}
     \end{table}
 
+    \section{因果发现算法}
+
+    \subsection{数据集}
+
+    导致肺癌的因素很多，本题将采用 LUCAS (LUng CAncer Simple set) 数据集\cite{lucas}，来计算这个数据集 12 个因素（如表 \ref{tab:factors}）之间的因果关系图。这 12 个因素都被编码为 0/1 值，共 2000 行。
+
+    \begin{table}[ht]
+        \centering
+        \caption{因素}\label{tab:factors}
+        \begin{tabular}{cll}
+            \toprule
+            序号 & 英语名 & 中文名 \\
+            \midrule
+            0  & Lung Cancer & 肺癌\\
+            1  & Smoking &  吸烟 \\
+            2  & Yellow\_Fingers & 黄手指  \\
+            3  & Anxiety & 焦虑 \\
+            4  & Peer\_Pressure & 同辈压力 \\
+            5  & Genetics & 基因 \\
+            6  & Attention\_Disorder & 注意力紊乱 \\
+            7  & Born\_an\_Even\_Day &  在偶数日出生 \\
+            8  & Car\_Accident & 车祸 \\
+            9  & Fatigue & 疲劳 \\
+            10 & Allergy & 过敏 \\
+            11 & Coughing & 咳嗽 \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+    \subsection{算法}
+
+    这里采用 LiNGAM（Linear Non-Gaussian Acyclic Model） 算法\cite{lingam}，该算法假设变量满足
+    \begin{equation}\label{eq:sem}
+        x_i = \sum_{j:\text{parents of} i} b_{ij}x_j + e_i    
+    \end{equation}
+    并有如下假设：
+    \begin{enumerate}
+        \item 因果图为有向无环图（DAG）
+        \item 外部影响 $e_i$ 都是非零方差的、并且独立非高斯
+        \item 假设不存在 latent confounders
+    \end{enumerate}
+    假设 1 与 3 在图 \ref{fig:answer} 中也可以看到都是正确的。假设 2 根据数据描述也被认为是正确的。
+
+    \paragraph{ICA}
+
+    对于输入的数据矩阵 $\mathbf{X}$，每一列为一个样本向量 $\mathbf{x}$，归一化消去偏置后，将公式 \eqref{eq:sem} 进行转换，使用矩阵形式得到
+    \begin{equation}
+        \mathbf{x} = \mathbf{B}\mathbf{x} + \mathbf{e}
+    \end{equation}
+    需要对 $\mathbf{x}$ 进行求解
+    \begin{equation}
+        \mathbf{x} = (\mathbf{I} - \mathbf{B})^{-1}\mathbf{e} = \mathbf{W}^{-1}\mathbf{e}
+    \end{equation}
+    这将利用 ICA (Fast-ICA) 求解唯一的 $\mathbf{W}$，然后对排序得到对角线不为零的矩阵 $\tilde{\mathbf{W}}$，归一化对角元素得到 $\tilde{\mathbf{W}}^\prime$。从而估计权重矩阵 $\hat{\mathbf{B}} = \mathbf{I}-\hat{\mathbf{W}}^\prime$。
+
+    \paragraph{排序}
+
+    为了一一对应 $x_i$ 与 $e_i$ 对应，我们需要对 $\hat{\mathbf{B}}$ 进行排序，可以表示为 $\tilde{\mathbf{B}} = \mathbf{P}\hat{\mathbf{B}}\mathbf{P}^T$，$\tilde{\mathbf{B}}$ 接近于一个严格的下三角矩阵。从而得到一个有向无环图。
+
+    \paragraph{剪枝}
+
+    删去不重要的边以得到最终结果。
+
+    \subsection{结果}
+
+    参考这篇博客\cite{draw}，在 Tetrad \cite{tetrad} 建立如图 \ref{fig:flow} 所示的流程图。
+
+    \begin{figure}[ht]
+        \centering
+        \includegraphics[width=7cm]{flow.png}
+        \caption{流程图}\label{fig:flow}
+    \end{figure}
+    
+    最后推断结果如图 \ref{fig:result} 所示。这个结果可以与生成数据的标准答案图 \ref{fig:answer} 做对比。可以发现有些联系方向依然有一些问题，比如
+    \fbox{Car Accident}$\rightarrow$\fbox{Genetics} 和 \fbox{Car Accident}$\rightarrow$\fbox{Attention Disorder}
+    关系明显可以用已有知识判定为错误。在 \fbox{Lung Cancer}$\rightarrow$\fbox{Smoking}，\fbox{Lung Cancer}$\rightarrow$\fbox{Genetics}，\fbox{Lung Cancer}$\rightarrow$\fbox{Fatigue}，\fbox{Smoking}$\rightarrow$\fbox{Anxiety}，\fbox{Smoking}$\rightarrow$\fbox{Peer Pressure} 等为相反方向，\fbox{Genetics}$\rightarrow$\fbox{Smoking}，\fbox{Fatigue}$\rightarrow$\fbox{Allergy}，\fbox{Fatigue}$\rightarrow$\fbox{Attention Disorder} 为新增边。
+
+    大部分的框架仍然是很明晰的，而部分错误结果与 ICA-LiNGAM 算法的缺陷有一定的关系，使用 FastICA 算法可能收敛到局部最优解，变量排序可能因尺度发生变化。此算法的进阶版本为 Direct LiNGAM，可以接受先验知识也可以得到更加可靠的结果，但也会导致更高的算法复杂度。由于 Tetrad 并没有实现 Direct LiNGAM，此处无法引入先验知识，只采用了 ICA-LiNGAM 求解。
+
+    \begin{figure}[ht]
+        \centering
+        \includegraphics[width=0.7\textwidth]{result.png}
+        \caption{因果推断结果}\label{fig:result}
+    \end{figure}
+
+   
+    \begin{figure}[ht]
+        \centering
+        \includegraphics[width=0.7\textwidth]{answer.png}
+        \caption{生成数据的依赖图}\label{fig:answer}
+    \end{figure}
+
+    \bibliography{ref}
+
 \end{document}

@@ -59,3 +59,50 @@ $$
 \frac{\partial \ln p(\mathbf{X}|\mathbf{\mu},\mathbf{\Sigma})}{\partial \mathbf
 \Sigma}=0\Rightarrow \Sigma_\text{ML}=\frac{1}{N}\sum_{n=1}^N(x_n-\mu)(x_n-\mu)^T
 $$
+
+### EM
+
+$p(x)\leftrightarrow q(x|\theta)$
+
+$$
+\begin{aligned}
+KL(p||q)&=\min_{\theta}\int p(x)\log \frac{p(x)}{q(x|\theta)}
+\\&=\min_{\theta}\int p(x)\log p(x) - \int p(x)\log q(x|\theta)
+\\&=\min_{\theta}\int \frac{1}{N}\sum_{t=1}^N \delta(x-x_t)\log q(x|\theta)
+\\&=\frac{1}{N}\sum_{t=1}^N\log q(x_t|\theta) && \int \delta(x)f(x) = f(0)
+\end{aligned}$$
+
+$p(x)p(y|x)\leftrightarrow q(x|y,\theta)q(y|\theta)$
+
+$$
+\begin{aligned}
+\max F(p(y|x),\theta)&=\int p(x)p(y|x)\log\frac{q(x|y,\theta)q(y|\theta)}{p(y|x)}\\
+&=\int p(x)p(y|x)\log\frac{q(x|y,\theta)q(y|\theta)}{q(x|\theta)}\frac{q(x|\theta)}{p(y|x)}\\
+&=\int p(x)p(y|x)\left[\log q(x|\theta)-\log\frac{p(y|x)}{q(y|x,\theta)} \right]\\
+&=\frac{1}{N}\sum_{t=1}^N\log q(x_t|\theta) - \int p(x)\cdot KL(p(y|x)||q(y|x,\theta))\\
+&\leq\log q(x|\theta) @ [p(y|x)=q(y|x,\theta)]
+\end{aligned}$$
+
+(Free Energy)
+
+fix $p(y|x)$, $F=\int p(y|x)\log[q(x|y,\theta)q(y|\theta)]$
+
+E Step - fix $\theta: p(y|x)=q(y|x,\theta)$
+
+$p(x)p(y|x,\theta)p(\theta|x)\leftrightarrow q(x|y,\theta)q(y|\theta)q(\theta)$
+
+$$
+\begin{aligned}
+F&=\int p(x)p(y|x,\theta)p(\theta|x)\log\frac{q(x|y,\theta)q(y|\theta)q(\theta)}{p(y|x,\theta)p(\theta|x)}\\
+&=\int p(x)p(y|x,\theta)p(\theta|x)\log\frac{q(x|y,\theta)q(y|\theta)}{q(x|\theta)}\frac{q(x|\theta)q(\theta)}{p(y|x,\theta)p(\theta|x)}\\
+&=\int p(x)p(y|x,\theta)p(\theta|x)\log\frac{q(y|x,\theta)}{p(y|x,\theta)}\frac{q(x|\theta)q(\theta)}{q(x|k)p(\theta|x)}q(x|k)\\
+&=\int p(x)p(y|x,\theta)p(\theta|x)\left(\log\frac{q(y|x,\theta)}{p(y|x,\theta)}+\log\frac{q(\theta|x)}{p(\theta|x)}+\log q(x|k)\right) & \text{VBEM}\\
+\end{aligned}
+$$
+
+$\max_k q(x|k)=\int q(x|\theta)q(\theta)d\theta$ marginal likelihood
+
+ML $\log q(x|\theta)$
+
+BL $\log q(x|\theta)q(\theta)=\log q(x|\theta) + \log q(\theta)$ 后项为正则化项
+

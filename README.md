@@ -7,6 +7,6 @@ Homework for Machine Learning Course
 
 [Homework 3](hw3/hw3.pdf)
 
-[review](review.pdf)
+[Review](review.pdf)
 
 [Project](https://github.com/LogCreative/quickdraw-classifier)
